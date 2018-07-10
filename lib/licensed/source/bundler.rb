@@ -9,6 +9,8 @@ module Licensed
     class Bundler
       GEMFILES = %w{Gemfile gems.rb}.freeze
       DEFAULT_WITHOUT_GROUPS = %i{development test}
+      # Gems included with ruby do not have a gemspec
+      STANDARD_GEMS = %w{bigdecimal cmath csv date dbm etc fcntl fiddle fileutils gdbm io-console ipaddr json openssl psych rdoc rubygems scanf sdbm stringio strscan webrick zlib}.freeze
 
       def self.type
         "rubygem"
@@ -70,9 +72,14 @@ module Licensed
       # Raises an error if the specification isn't found
       def specs_for_dependencies(dependencies, source)
         included_dependencies = dependencies.select { |d| include?(d, source) }
+        included_dependencies.reject!{|dep| standard_gem?(dep) }
         included_dependencies.map do |dep|
           gem_spec(dep) || raise("Unable to find a specification for #{dep.name} (#{dep.requirement}) in any sources")
         end
+      end
+
+      def standard_gem?(dependency)
+        STANDARD_GEMS.include?(dependency.name)
       end
 
       # Returns a Gem::Specification for the provided gem argument.  If a
